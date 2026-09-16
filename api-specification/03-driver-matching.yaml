@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Driver Matching & Assignment API
+  version: 1.0.0
+  description: |
+    API specification for selecting suitable drivers, assigning them to trips, and handling rejected/timeout cases.
+    Derived from FR-11 to FR-19, RULE-01 to RULE-05.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-11
+  - FR-12
+  - FR-13
+  - FR-14
+  - FR-15
+  - FR-16
+  - FR-17
+  - FR-18
+  - FR-19
+
+paths:
+  /drivers/search:
+    get:
+      summary: Tìm tài xế phù hợp cho chuyến đi
+      operationId: searchDriversForTrip
+      tags: [DriverMatching]
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: vehicleType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: radiusKm
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: Danh sách tài xế phù hợp
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverCandidate'
+
+  /trips/{tripId}/assign:
+    post:
+      summary: Phân công tài xế cho chuyến
+      operationId: assignDriverToTrip
+      tags: [DriverMatching]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignDriverRequest'
+      responses:
+        '200':
+          description: Phân công thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripAssignment'
+
+  /trips/{tripId}/fallback:
+    post:
+      summary: Tìm tài xế thay thế khi tài xế từ chối hoặc timeout
+      operationId: fallbackDriverSearch
+      tags: [DriverMatching]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      responses:
+        '200':
+          description: Kết quả tìm tài xế mới
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FallbackResult'
+
+components:
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    DriverCandidate:
+      type: object
+      required: [driverId, fullName, vehicleType, availability, distanceKm]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        vehicleType:
+          type: string
+        availability:
+          type: string
+          enum: [available, busy, unavailable]
+        distanceKm:
+          type: number
+          format: double
+        etaMinutes:
+          type: integer
+
+    AssignDriverRequest:
+      type: object
+      required: [driverId]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+
+    TripAssignment:
+      type: object
+      required: [tripId, driverId, status]
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [DRIVER_ASSIGNED, DRIVER_ARRIVING, DRIVER_ARRIVED]
+        assignedAt:
+          type: string
+          format: date-time
+
+    FallbackResult:
+      type: object
+      required: [tripId, foundDriver, status]
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        foundDriver:
+          type: boolean
+        status:
+          type: string
+          enum: [FOUND, NOT_FOUND]
+        message:
+          type: string

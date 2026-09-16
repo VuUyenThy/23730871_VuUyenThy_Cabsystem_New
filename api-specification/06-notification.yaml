@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Notification API
+  version: 1.0.0
+  description: |
+    API specification for notification events such as trip acceptance, driver arrival, trip completion,
+    and payment status updates.
+    Derived from FR-42 to FR-48, BR-13.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-42
+  - FR-43
+  - FR-44
+  - FR-45
+  - FR-46
+  - FR-47
+  - FR-48
+  - BR-13
+
+paths:
+  /notifications:
+    post:
+      summary: Gửi thông báo cho người nhận
+      operationId: sendNotification
+      tags: [Notification]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '201':
+          description: Thông báo được gửi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+
+components:
+  schemas:
+    NotificationRequest:
+      type: object
+      required: [recipientId, recipientType, eventType, message]
+      properties:
+        recipientId:
+          type: string
+          format: uuid
+        recipientType:
+          type: string
+          enum: [customer, driver, operator]
+        eventType:
+          type: string
+          enum: [trip_created, driver_assigned, driver_arrived, trip_completed, payment_result, new_trip_for_driver]
+        message:
+          type: string
+        channel:
+          type: string
+          enum: [sms, email, push, in_app]
+
+    Notification:
+      type: object
+      required: [id, recipientId, recipientType, eventType, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipientId:
+          type: string
+          format: uuid
+        recipientType:
+          type: string
+        eventType:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [queued, sent, failed]
+        sentAt:
+          type: string
+          format: date-time

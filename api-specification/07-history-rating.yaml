@@ -1,0 +1,172 @@
+openapi: 3.0.3
+info:
+  title: CAB System - History & Rating API
+  version: 1.0.0
+  description: |
+    API specification for trip history review and driver rating after trip completion.
+    Derived from FR-49 to FR-52, BR-14, BR-15.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-49
+  - FR-50
+  - FR-51
+  - FR-52
+
+paths:
+  /customers/{customerId}/history:
+    get:
+      summary: Xem lịch sử chuyến của khách hàng
+      operationId: getCustomerHistory
+      tags: [History]
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: Danh sách lịch sử chuyến
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripHistory'
+
+  /trips/{tripId}/ratings:
+    post:
+      summary: Khách hàng đánh giá tài xế
+      operationId: createDriverRating
+      tags: [Rating]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingRequest'
+      responses:
+        '201':
+          description: Đánh giá được lưu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+
+  /drivers/{driverId}/ratings:
+    get:
+      summary: Xem đánh giá của tài xế
+      operationId: getDriverRatings
+      tags: [Rating]
+      parameters:
+        - $ref: '#/components/parameters/DriverId'
+      responses:
+        '200':
+          description: Danh sách đánh giá
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rating'
+
+components:
+  parameters:
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DriverId:
+      name: driverId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    TripHistory:
+      type: object
+      required: [tripId, pickupLocation, destination, status, createdAt]
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        pickupLocation:
+          $ref: '#/components/schemas/Location'
+        destination:
+          $ref: '#/components/schemas/Location'
+        status:
+          type: string
+          enum: [REQUESTED, SEARCHING_DRIVER, DRIVER_ASSIGNED, DRIVER_ARRIVING, DRIVER_ARRIVED, PASSENGER_PICKED_UP, IN_PROGRESS, COMPLETED, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+
+    Location:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        address:
+          type: string
+
+    RatingRequest:
+      type: object
+      required: [customerId, driverId, score]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+
+    Rating:
+      type: object
+      required: [id, tripId, customerId, driverId, score, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time

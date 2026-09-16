@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Reporting API
+  version: 1.0.0
+  description: |
+    API specification for operational and business reporting.
+    Derived from FR-66 to FR-70, BR-19.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-66
+  - FR-67
+  - FR-68
+  - FR-69
+  - FR-70
+  - BR-19
+
+paths:
+  /reports/summary:
+    get:
+      summary: Xem báo cáo tổng hợp
+      operationId: getSummaryReport
+      tags: [Reporting]
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [day, week, month, quarter]
+      responses:
+        '200':
+          description: Bản tổng hợp báo cáo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryReport'
+
+  /reports/trips:
+    get:
+      summary: Báo cáo số lượng chuyến
+      operationId: getTripReport
+      tags: [Reporting]
+      responses:
+        '200':
+          description: Thống kê chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripReport'
+
+  /reports/revenue:
+    get:
+      summary: Báo cáo doanh thu
+      operationId: getRevenueReport
+      tags: [Reporting]
+      responses:
+        '200':
+          description: Báo cáo doanh thu theo kỳ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReport'
+
+  /reports/drivers:
+    get:
+      summary: Báo cáo hiệu suất tài xế
+      operationId: getDriverPerformanceReport
+      tags: [Reporting]
+      responses:
+        '200':
+          description: Danh sách hiệu suất tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverPerformance'
+
+components:
+  schemas:
+    SummaryReport:
+      type: object
+      required: [period, totalTrips, completedTrips, cancelledTrips, totalRevenue]
+      properties:
+        period:
+          type: string
+        totalTrips:
+          type: integer
+        completedTrips:
+          type: integer
+        cancelledTrips:
+          type: integer
+        totalRevenue:
+          type: number
+          format: double
+
+    TripReport:
+      type: object
+      required: [requested, completed, failed, cancelled]
+      properties:
+        requested:
+          type: integer
+        completed:
+          type: integer
+        failed:
+          type: integer
+        cancelled:
+          type: integer
+
+    RevenueReport:
+      type: object
+      required: [cashRevenue, eWalletRevenue, totalRevenue]
+      properties:
+        cashRevenue:
+          type: number
+          format: double
+        eWalletRevenue:
+          type: number
+          format: double
+        totalRevenue:
+          type: number
+          format: double
+
+    DriverPerformance:
+      type: object
+      required: [driverId, fullName, tripsCompleted, avgRating]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        tripsCompleted:
+          type: integer
+        avgRating:
+          type: number
+          format: double

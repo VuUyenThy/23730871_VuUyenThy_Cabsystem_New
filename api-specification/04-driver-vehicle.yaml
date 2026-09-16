@@ -1,0 +1,234 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Driver & Vehicle Management API
+  version: 1.0.0
+  description: |
+    API specification for driver status, current location, and vehicle management.
+    Derived from FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, BR-09.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-20
+  - FR-21
+  - FR-22
+  - FR-23
+  - FR-24
+  - FR-25
+  - FR-26
+  - BR-09
+
+paths:
+  /drivers/{driverId}/availability:
+    put:
+      summary: Cập nhật trạng thái sẵn sàng của tài xế
+      operationId: updateDriverAvailability
+      tags: [Driver]
+      parameters:
+        - $ref: '#/components/parameters/DriverId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityUpdateRequest'
+      responses:
+        '200':
+          description: Cập nhật trạng thái thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverAvailability'
+
+  /drivers/{driverId}/location:
+    put:
+      summary: Cập nhật vị trí hiện tại của tài xế
+      operationId: updateDriverLocation
+      tags: [Driver]
+      parameters:
+        - $ref: '#/components/parameters/DriverId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationPoint'
+      responses:
+        '200':
+          description: Cập nhật vị trí thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverLocation'
+
+  /vehicles:
+    post:
+      summary: Thêm phương tiện cho tài xế
+      operationId: createVehicle
+      tags: [Vehicle]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+      responses:
+        '201':
+          description: Phương tiện được tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+
+  /vehicles/{vehicleId}:
+    get:
+      summary: Lấy thông tin phương tiện
+      operationId: getVehicle
+      tags: [Vehicle]
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: Thông tin phương tiện
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+    put:
+      summary: Cập nhật thông tin phương tiện
+      operationId: updateVehicle
+      tags: [Vehicle]
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+
+components:
+  parameters:
+    DriverId:
+      name: driverId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VehicleId:
+      name: vehicleId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    AvailabilityUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [available, unavailable, busy]
+        updatedAt:
+          type: string
+          format: date-time
+
+    DriverAvailability:
+      type: object
+      required: [driverId, status, updatedAt]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [available, unavailable, busy]
+        updatedAt:
+          type: string
+          format: date-time
+
+    LocationPoint:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        accuracy:
+          type: number
+          format: double
+
+    DriverLocation:
+      type: object
+      required: [driverId, lat, lng, updatedAt]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        updatedAt:
+          type: string
+          format: date-time
+
+    VehicleRequest:
+      type: object
+      required: [driverId, plateNumber, model, type]
+      properties:
+        driverId:
+          type: string
+          format: uuid
+        plateNumber:
+          type: string
+        model:
+          type: string
+        type:
+          type: string
+          enum: [car, motorbike, van]
+        color:
+          type: string
+        status:
+          type: string
+          enum: [active, maintenance, inactive]
+
+    Vehicle:
+      type: object
+      required: [id, driverId, plateNumber, model, type, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+        plateNumber:
+          type: string
+        model:
+          type: string
+        type:
+          type: string
+          enum: [car, motorbike, van]
+        color:
+          type: string
+        status:
+          type: string
+          enum: [active, maintenance, inactive]

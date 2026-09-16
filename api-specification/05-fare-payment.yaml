@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Fare & Payment API
+  version: 1.0.0
+  description: |
+    API specification for trip fare calculation, payment initiation, processing, and transaction history.
+    Derived from FR-32 to FR-41, BR-10, BR-11, BR-12.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-32
+  - FR-33
+  - FR-34
+  - FR-35
+  - FR-36
+  - FR-37
+  - FR-38
+  - FR-39
+  - FR-40
+  - FR-41
+
+paths:
+  /trips/{tripId}/fare:
+    post:
+      summary: Tính cước và hiển thị chi phí chuyến đi
+      operationId: calculateTripFare
+      tags: [FarePayment]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      responses:
+        '200':
+          description: Cước chuyến đã được tính
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FareQuotation'
+
+  /payments:
+    post:
+      summary: Tạo giao dịch thanh toán
+      operationId: createPayment
+      tags: [FarePayment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        '201':
+          description: Giao dịch được tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /payments/{paymentId}/confirm:
+    post:
+      summary: Xác nhận thanh toán
+      operationId: confirmPayment
+      tags: [FarePayment]
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentConfirmationRequest'
+      responses:
+        '200':
+          description: Xác nhận thanh toán thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /customers/{customerId}/payments:
+    get:
+      summary: Xem lịch sử thanh toán của khách hàng
+      operationId: listCustomerPayments
+      tags: [FarePayment]
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: Danh sách thanh toán
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+
+components:
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    FareQuotation:
+      type: object
+      required: [tripId, amount, currency, serviceType]
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          default: VND
+        serviceType:
+          type: string
+          enum: [car, motorbike, van]
+        details:
+          type: string
+
+    CreatePaymentRequest:
+      type: object
+      required: [tripId, customerId, amount, method]
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        method:
+          type: string
+          enum: [cash, bank_transfer, e_wallet]
+        provider:
+          type: string
+
+    Payment:
+      type: object
+      required: [id, tripId, customerId, amount, method, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        method:
+          type: string
+          enum: [cash, bank_transfer, e_wallet]
+        status:
+          type: string
+          enum: [pending, paid, failed, refunded]
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    PaymentConfirmationRequest:
+      type: object
+      required: [transactionRef, status]
+      properties:
+        transactionRef:
+          type: string
+        status:
+          type: string
+          enum: [paid, failed]
+        message:
+          type: string

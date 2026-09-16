@@ -1,0 +1,187 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Booking & Trip API
+  version: 1.0.0
+  description: |
+    API specification for customer trip creation, trip inquiry, and trip lifecycle.
+    Derived from FR-06 to FR-10, FR-27 to FR-31, BR-03, BR-07, BR-08.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-06
+  - FR-07
+  - FR-08
+  - FR-09
+  - FR-10
+  - FR-27
+  - FR-28
+  - FR-29
+  - FR-30
+  - FR-31
+
+paths:
+  /trips:
+    post:
+      summary: Tạo yêu cầu đặt chuyến
+      operationId: createTrip
+      tags: [Trip]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTripRequest'
+      responses:
+        '201':
+          description: Yêu cầu chuyến được tạo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+
+  /trips/{tripId}:
+    get:
+      summary: Lấy chi tiết chuyến đi
+      operationId: getTrip
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      responses:
+        '200':
+          description: Chi tiết chuyến
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+    patch:
+      summary: Cập nhật trạng thái chuyến
+      operationId: updateTripStatus
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripStatusUpdateRequest'
+      responses:
+        '200':
+          description: Trạng thái chuyến cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+
+  /customers/{customerId}/trips:
+    get:
+      summary: Lấy lịch sử chuyến của khách hàng
+      operationId: listCustomerTrips
+      tags: [Trip]
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: Danh sách chuyến đi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trip'
+
+components:
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateTripRequest:
+      type: object
+      required: [customerId, pickupLocation, destination, vehicleType]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        pickupLocation:
+          $ref: '#/components/schemas/Location'
+        destination:
+          $ref: '#/components/schemas/Location'
+        vehicleType:
+          type: string
+          enum: [car, motorbike, van]
+        notes:
+          type: string
+
+    Trip:
+      type: object
+      required: [id, customerId, status, pickupLocation, destination, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [REQUESTED, SEARCHING_DRIVER, DRIVER_ASSIGNED, DRIVER_ARRIVING, DRIVER_ARRIVED, PASSENGER_PICKED_UP, IN_PROGRESS, COMPLETED, FAILED]
+        pickupLocation:
+          $ref: '#/components/schemas/Location'
+        destination:
+          $ref: '#/components/schemas/Location'
+        estimatedFare:
+          type: number
+          format: double
+        actualFare:
+          type: number
+          format: double
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Location:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        address:
+          type: string
+
+    TripStatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [SEARCHING_DRIVER, DRIVER_ASSIGNED, DRIVER_ARRIVING, DRIVER_ARRIVED, PASSENGER_PICKED_UP, IN_PROGRESS, COMPLETED, FAILED]
+        note:
+          type: string

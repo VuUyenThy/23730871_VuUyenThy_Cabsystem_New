@@ -1,0 +1,246 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Operator & Admin API
+  version: 1.0.0
+  description: |
+    API specification for operator monitoring and admin privilege management.
+    Derived from FR-53 to FR-65, BR-16, BR-20, BR-21.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-53
+  - FR-54
+  - FR-55
+  - FR-56
+  - FR-57
+  - FR-58
+  - FR-59
+  - FR-60
+  - FR-61
+  - FR-62
+  - FR-63
+  - FR-64
+  - FR-65
+
+paths:
+  /operators/customers:
+    get:
+      summary: Xem danh sách khách hàng
+      operationId: listCustomersForOperator
+      tags: [Operator]
+      responses:
+        '200':
+          description: Danh sách khách hàng
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerSummary'
+
+  /operators/drivers:
+    get:
+      summary: Xem danh sách tài xế
+      operationId: listDriversForOperator
+      tags: [Operator]
+      responses:
+        '200':
+          description: Danh sách tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverSummary'
+
+  /operators/trips/active:
+    get:
+      summary: Xem chuyến đang diễn ra
+      operationId: listActiveTrips
+      tags: [Operator]
+      responses:
+        '200':
+          description: Danh sách chuyến đang diễn ra
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripSummary'
+
+  /operators/trips/{tripId}/issues:
+    post:
+      summary: Xử lý sự cố cho chuyến đi
+      operationId: createTripIssue
+      tags: [Operator]
+      parameters:
+        - $ref: '#/components/parameters/TripId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripIssueRequest'
+      responses:
+        '201':
+          description: Sự cố được ghi nhận
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripIssue'
+
+  /admin/roles:
+    get:
+      summary: Xem danh sách quyền
+      operationId: listRoles
+      tags: [Admin]
+      responses:
+        '200':
+          description: Danh sách role
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+  /admin/audit-logs:
+    get:
+      summary: Xem audit log
+      operationId: listAuditLogs
+      tags: [Admin]
+      responses:
+        '200':
+          description: Danh sách log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+
+components:
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CustomerSummary:
+      type: object
+      required: [id, fullName, phone, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+
+    DriverSummary:
+      type: object
+      required: [id, fullName, status, availability]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        status:
+          type: string
+          enum: [approved, pending, suspended]
+        availability:
+          type: string
+          enum: [available, unavailable, busy]
+
+    TripSummary:
+      type: object
+      required: [tripId, customerId, driverId, status]
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        driverId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [REQUESTED, SEARCHING_DRIVER, DRIVER_ASSIGNED, DRIVER_ARRIVING, DRIVER_ARRIVED, PASSENGER_PICKED_UP, IN_PROGRESS, COMPLETED, FAILED]
+
+    TripIssueRequest:
+      type: object
+      required: [issueType, description]
+      properties:
+        issueType:
+          type: string
+          enum: [driver_missing, payment_failed, trip_cancelled, location_issue]
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+
+    TripIssue:
+      type: object
+      required: [id, tripId, issueType, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        issueType:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, resolved]
+        createdAt:
+          type: string
+          format: date-time
+
+    Role:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    AuditLog:
+      type: object
+      required: [id, actorId, action, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        actorId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        details:
+          type: string
+        createdAt:
+          type: string
+          format: date-time

@@ -1,0 +1,285 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Authentication & Account API
+  version: 1.0.0
+  description: |
+    API specification for authentication, customer account management, driver account management,
+    and general user profile operations.
+    Derived from FR-01 to FR-05, BR-01, BR-02, BR-20.
+
+servers:
+  - url: https://api.cab-system.local/v1
+    description: CAB API Server
+
+x-functional-requirements:
+  - FR-01
+  - FR-02
+  - FR-03
+  - FR-04
+  - FR-05
+  - BR-01
+  - BR-02
+  - BR-20
+
+paths:
+  /auth/customers/register:
+    post:
+      summary: Đăng ký tài khoản khách hàng
+      operationId: registerCustomer
+      tags: [Auth, Customer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterCustomerRequest'
+      responses:
+        '201':
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerProfile'
+
+  /auth/customers/login:
+    post:
+      summary: Đăng nhập khách hàng
+      operationId: loginCustomer
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/drivers/login:
+    post:
+      summary: Đăng nhập tài xế
+      operationId: loginDriver
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /customers/{customerId}:
+    get:
+      summary: Lấy thông tin khách hàng
+      operationId: getCustomerProfile
+      tags: [Customer]
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: Thông tin khách hàng
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerProfile'
+    put:
+      summary: Cập nhật thông tin khách hàng
+      operationId: updateCustomerProfile
+      tags: [Customer]
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerRequest'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerProfile'
+
+  /drivers/{driverId}:
+    get:
+      summary: Lấy thông tin tài xế
+      operationId: getDriverProfile
+      tags: [Driver]
+      parameters:
+        - $ref: '#/components/parameters/DriverId'
+      responses:
+        '200':
+          description: Thông tin tài xế
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverProfile'
+    put:
+      summary: Cập nhật thông tin tài xế
+      operationId: updateDriverProfile
+      tags: [Driver]
+      parameters:
+        - $ref: '#/components/parameters/DriverId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDriverRequest'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverProfile'
+
+  /auth/logout:
+    post:
+      summary: Đăng xuất người dùng
+      operationId: logout
+      tags: [Auth]
+      responses:
+        '200':
+          description: Đăng xuất thành công
+
+components:
+  parameters:
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DriverId:
+      name: driverId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      required: [token, expiresAt, userId, role]
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        userId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [customer, driver, operator, admin]
+
+    RegisterCustomerRequest:
+      type: object
+      required: [fullName, phone, email, password]
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        city:
+          type: string
+
+    CustomerProfile:
+      type: object
+      required: [id, fullName, phone, email, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        city:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    UpdateCustomerRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+
+    DriverProfile:
+      type: object
+      required: [id, fullName, phone, email, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+          enum: [approved, pending, suspended]
+        availability:
+          type: string
+          enum: [available, unavailable, busy]
+        createdAt:
+          type: string
+          format: date-time
+
+    UpdateDriverRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        availability:
+          type: string
+          enum: [available, unavailable, busy]
